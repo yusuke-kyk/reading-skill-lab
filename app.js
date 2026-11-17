@@ -1,8 +1,10 @@
+import {CheckRepository, createCheckPlan, completeCheck, checkSummary} from './check.js';
 import {analyzeLearning, formatRate} from './analytics.js';
 import {ProgressRepository} from './progress.js';
 import {questionKey, latestAttempts, selectQuestions, validateBank} from './quiz.js';
 const app = document.querySelector('#app');
 const repo = new ProgressRepository();
+const checks = new CheckRepository();
 let bank, questions, session, setup;
 const e = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pct = (correct,total) => total ? Math.round(correct / total * 100) + '%' : '—';
@@ -15,18 +17,43 @@ function render(html) {
 function reviewPool() { const latest = latestAttempts(repo.getAttempts()); return questions.filter(q => latest.get(questionKey(q))?.isCorrect === false); }
 function home() {
   const attempts = repo.getAttempts(), latest = latestAttempts(attempts), waiting = reviewPool().length;
-  render(`<section class="intro"><p class="eyebrow">READING SKILL LAB</p><h1>「読めた」を、<br class="mobile-break">確かな力に。</h1><p class="muted">一問ずつ、じっくり。7つの分野から読解の練習を始めましょう。</p></section>
+  render(`${checks.warning ? `<p class="notice" role="alert">${e(checks.warning)}</p>` : ''}<section class="intro"><p class="eyebrow">READING SKILL LAB</p><h1>「読めた」を、<br class="mobile-break">確かな力に。</h1><p class="muted">一問ずつ、じっくり。7つの分野から読解の練習を始めましょう。</p></section>
   <section class="stats" aria-label="学習実績"><div><span>累計解答回数</span><strong>${attempts.length}<small> 回</small></strong></div><div><span>累計正答率</span><strong>${pct(attempts.filter(a => a.isCorrect).length,attempts.length)}</strong></div><div><span>復習待ち</span><strong>${waiting}<small> 問</small></strong></div></section>
+  <button class="mode report-link" id="check"><span><b>読解力チェック</b><small>7分野 × 3問で、次に学ぶ分野を見つける</small></span><span aria-hidden="true">→</span></button>
   <button class="mode report-link" id="report"><span><b>学習レポート</b><small>初回と最新の正答率から、次に学ぶ分野を見つける</small></span><span aria-hidden="true">→</span></button>
   <nav class="modes" aria-label="トレーニングモード"><button class="mode" data-mode="random"><span class="mode-icon" aria-hidden="true">⇄</span><span><b>ランダム</b><small>7分野をまぜてトレーニング</small></span><span aria-hidden="true">→</span></button><button class="mode" data-mode="review"><span class="mode-icon" aria-hidden="true">↻</span><span><b>間違い直し</b><small>${waiting ? `${waiting}問をもう一度、理解へ` : '復習待ちはありません'}</small></span><span aria-hidden="true">→</span></button></nav>
   <section><div class="section-heading"><h2>分野別トレーニング</h2><span class="muted">7分野 · ${questions.length}問</span></div><div class="categories">${bank.categories.map((c,i) => {
     const pool = questions.filter(q => q.category === c.id);
     return `<button class="category" data-category="${e(c.id)}"><span class="category-number">0${i+1}</span><h3>${e(c.name)}</h3><p>${descriptions[i] || '文章を正確に読み取る練習'}</p><div><span>${pool.length}問 <span class="dot">·</span> 未挑戦 ${pool.filter(q => !latest.has(questionKey(q))).length}問</span><span aria-hidden="true">→</span></div></button>`;
-  }).join('')}</div></section><aside class="info"><b>自分のペースで続けよう</b><p>履歴はこの端末・ブラウザーだけに保存され、他の端末には同期されません。ブラウザーデータの消去やシークレットモードでは履歴が残らない場合があります。</p><p>掲載問題は試作です。授業での利用前に先生による内容確認をお願いします。</p><button class="text-button" id="reset">学習履歴をリセット</button></aside>`);
+  }).join('')}</div></section><aside class="info"><b>自分のペースで続けよう</b><p>履歴はこの端末・ブラウザーだけに保存され、他の端末には同期されません。ブラウザーデータの消去やシークレットモードでは履歴が残らない場合があります。</p><p>掲載問題は試作です。授業での利用前に先生による内容確認をお願いします。</p><button class="text-button" id="reset">学習データをすべて削除</button></aside>`);
   app.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => showSetup(b.dataset.mode));
   app.querySelectorAll('[data-category]').forEach(b => b.onclick = () => showSetup('category',b.dataset.category));
+  document.querySelector('#check').onclick = showCheckSetup;
   document.querySelector('#report').onclick = showReport;
-  document.querySelector('#reset').onclick = () => { if (confirm('このブラウザーの学習履歴をすべて削除します。よろしいですか？')) { repo.resetProgress(); home(); } };
+  document.querySelector('#reset').onclick = () => { if (confirm('このブラウザーの通常演習・読解力チェックの解答履歴と、診断テストの保存結果をすべて削除します。この操作は取り消せません。削除しますか？')) { repo.resetProgress(); checks.resetResults(); session = null; setup = null; home(); } };
+}
+const checkDisclaimer = '独自の練習問題による参考チェックです。公式RSTのスコアや能力判定ではありません。';
+function showCheckSetup() {
+  let plan, error;
+  try { plan = createCheckPlan(questions,bank.categories,repo.getAttempts()); } catch (err) { error = err.message; }
+  const saved = checks.getResults().reverse();
+  render(`<button class="text-button" id="home">← ホームに戻る</button><section class="panel setup"><p class="eyebrow">読解力チェック Ver.1.2</p><h1>読解力チェック</h1><p>7分野から各3問、合計21問に答えます。原則、各分野の基礎・標準・発展を1問ずつ出題します。</p><p>解答確定後は変更できません。正誤・解説は21問を終えた後にまとめて表示します。</p><p>確定した解答は通常の学習履歴に記録します。途中終了・再読み込みでは未完了の結果は保存しません。</p><p class="notice">${e(checkDisclaimer)}</p>${plan?.reference ? '<p class="notice">未挑戦問題だけでは条件を満たせないため、既習問題を含む参考チェックです。</p>' : '<p class="muted">未挑戦問題から出題します。</p>'}${plan && !plan.balanced ? '<p class="notice">一部の分野で難易度が不足しているため、別の難易度で補います。</p>' : ''}${error ? `<p role="alert">${e(error)}</p>` : '<button class="primary" id="start-check">21問のチェックを始める →</button>'}</section>
+  <section class="result-review"><h2>保存したチェック結果</h2>${checks.warning ? `<p class="notice" role="alert">${e(checks.warning)}</p>` : ''}${saved.map((r,i) => `<button class="secondary" data-saved-check="${i}">${e(new Date(r.completedAt).toLocaleString('ja-JP'))} · ${checkSummary(r).correct} / 21問${r.reference?' · 既習問題を含む参考チェック':''}</button>`).join('') || '<p class="muted">完了したチェック結果はまだありません。</p>'}</section>`);
+  document.querySelector('#home').onclick = home;
+  if (plan) document.querySelector('#start-check').onclick = () => {
+    session = {id:crypto.randomUUID(),mode:'check',...plan,index:0,answers:[],locked:false}; showQuestion();
+  };
+  app.querySelectorAll('[data-saved-check]').forEach(button => button.onclick = () => showCheckResult(saved[Number(button.dataset.savedCheck)]));
+}
+function showCheckResult(result) {
+  const summary = checkSummary(result), wrong = result.answers.filter(a => !a.isCorrect);
+  render(`<section class="panel result"><p class="eyebrow">読解力チェック結果</p><h1>次の練習につなげよう。</h1><p class="muted">${e(new Date(result.completedAt).toLocaleString('ja-JP'))}</p><p class="score">${summary.correct}<small> / 21 問正解</small></p><p class="notice">${e(checkDisclaimer)}</p>${result.reference?'<p class="notice">既習問題を含む参考チェックです。</p>':''}${!result.balanced?'<p class="notice">難易度の不足を別の難易度で補った結果です。</p>':''}${checks.warning?`<p class="notice" role="alert">${e(checks.warning)}</p>`:''}<button class="secondary" id="check-list">保存結果の一覧へ</button><button class="secondary" id="home">ホームに戻る</button></section>
+  <section><h2>7分野の結果</h2><div class="check-scores">${summary.categories.map(c => `<article class="panel"><h3>${e(c.name)}</h3><p><b>${c.correct} / ${c.total}問正解</b></p></article>`).join('')}</div></section>
+  <section class="result-review"><h2>次に練習する分野</h2><p class="muted">今回の正答数が少ない分野を最大2つ表示します。同点の場合は分野の表示順です。各分野3問だけの結果なので、練習先を選ぶ目安にしてください。</p>${summary.recommendations.map(c => `<button class="secondary" data-check-practice="${e(c.id)}">${e(c.name)}を練習する →</button>`).join('') || '<p>全問正解です。好きな分野の練習を続けましょう。</p>'}</section>
+  <section class="result-review"><h2>間違えた問題の振り返り ${wrong.length}問</h2>${wrong.map(a => `<details><summary>${e(a.q.question)}<span>解説を見る</span></summary>${a.q.passage?`<p>${e(a.q.passage)}</p>`:''}${visual(a.q)}${explanation(a.q,a.selected)}</details>`).join('') || '<p class="muted">今回の誤答はありません。</p>'}</section>`);
+  document.querySelector('#home').onclick = home;
+  document.querySelector('#check-list').onclick = showCheckSetup;
+  app.querySelectorAll('[data-check-practice]').forEach(button => button.onclick = () => showSetup('category',button.dataset.checkPractice));
 }
 function reportStats(stats) {
   return `<dl class="report-stats"><div><dt>初回正答率</dt><dd>${formatRate(stats.firstCorrect,stats.answered)}</dd></div><div><dt>最新正答率</dt><dd>${formatRate(stats.latestCorrect,stats.answered)}</dd></div><div><dt>学習済み問題数</dt><dd>${stats.answered}<small> / ${stats.total}問</small></dd></div></dl>`;
@@ -65,7 +92,7 @@ function explanation(q, selected) { return `<p><b>正解：${e(q.answer)}．${e(
 function showQuestion() {
   const q = session.questions[session.index]; session.locked = false;
   render(`<div class="question-top"><button class="text-button" id="quit">ホームに戻る</button><span>${session.index+1} / ${session.questions.length} 問</span></div><progress value="${session.index+1}" max="${session.questions.length}" aria-label="出題の進捗"></progress><section class="panel question"><div class="badges"><span>${e(categoryName(q.category))}</span><span>${{basic:'基礎',standard:'標準',advanced:'発展'}[q.difficulty]}</span>${q.status==='pilot'?'<span class="pilot">試作問題</span>':''}</div><h1 class="question-title">${e(q.question)}</h1>${q.passage ? `<div class="passage">${e(q.passage)}</div>` : ''}${visual(q)}<form id="answer-form"><fieldset><legend class="muted">答えを一つ選んでください</legend><div class="options">${q.options.map(o => `<label class="option"><input type="radio" name="answer" value="${o.id}" required><span class="option-letter">${o.id}</span><span>${e(o.text)}</span></label>`).join('')}</div></fieldset><button class="primary" id="submit" disabled>解答する</button></form><div id="feedback" role="status" aria-live="polite"></div></section>`);
-  document.querySelector('#quit').onclick = () => { if(confirm('今回のトレーニングを終了してホームに戻りますか？ 確定済みの解答は記録されています。')) home(); };
+  document.querySelector('#quit').onclick = () => { if(confirm(session.mode === 'check' ? 'チェックを途中終了しますか？ 完了結果は保存されません。確定済みの解答は学習履歴に残ります。' : '今回のトレーニングを終了してホームに戻りますか？ 確定済みの解答は記録されています。')) home(); };
   const form = document.querySelector('#answer-form'), submit = document.querySelector('#submit');
   form.onchange = () => { if (!session.locked) submit.disabled = false; };
   form.onsubmit = event => {
@@ -75,6 +102,16 @@ function showQuestion() {
     repo.recordAttempt({questionKey:questionKey(q), category:q.category, selected, isCorrect, answeredAt:new Date().toISOString(), sessionId:session.id});
     session.answers.push({q,selected,isCorrect});
     form.querySelectorAll('input,button').forEach(el => el.disabled = true);
+    if (session.mode === 'check') {
+      const feedback = document.querySelector('#feedback');
+      feedback.innerHTML = `<p tabindex="-1">解答を記録しました。正誤・解説は最後に表示します。</p>${repo.warning?`<p class="notice">${e(repo.warning)}</p>`:''}<button class="primary" id="next">${session.index+1===session.questions.length?'チェック結果を見る':'次の問題へ'} →</button>`;
+      feedback.querySelector('p').focus();
+      document.querySelector('#next').onclick = () => {
+        if (++session.index < session.questions.length) showQuestion();
+        else { const result = completeCheck(session,bank.categories); checks.save(result); showCheckResult(result); }
+      };
+      return;
+    }
     form.querySelectorAll('.option').forEach(label => { if (label.querySelector('input').value === q.answer) label.classList.add('correct'); });
     const feedback = document.querySelector('#feedback');
     feedback.innerHTML = `<div class="feedback ${isCorrect?'success':'failure'}" tabindex="-1"><h2>${isCorrect?'○ 正解':'× 不正解'}</h2>${explanation(q)}${repo.warning ? `<p class="notice">${e(repo.warning)}</p>` : ''}</div><button class="primary" id="next">${session.index+1 === session.questions.length?'結果を見る':'次の問題へ'} →</button>`;

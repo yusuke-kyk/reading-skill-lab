@@ -13,7 +13,7 @@ server = ThreadingHTTPServer(('127.0.0.1', 0), partial(QuietHandler, directory=s
 Thread(target=server.serve_forever, daemon=True).start()
 try:
     base = f'http://127.0.0.1:{server.server_port}/{root.name}/'
-    for path in ['index.html', 'styles.css', 'app.js', 'progress.js', 'quiz.js', 'analytics.js', 'data/questions.json']:
+    for path in ['index.html', 'styles.css', 'app.js', 'progress.js', 'quiz.js', 'analytics.js', 'check.js', 'data/questions.json']:
         with urlopen(base + path) as response:
             assert response.status == 200
             body = response.read()
