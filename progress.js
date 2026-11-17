@@ -3,6 +3,7 @@ const valid = a => a && typeof a.questionKey === 'string' && typeof a.category =
 export class ProgressRepository {
   constructor(storageProvider = () => globalThis.localStorage) {
     this.attempts = []; this.warning = ''; this.storage = null;
+    this.storageProvider = storageProvider;
     try {
       this.storage = storageProvider();
       const raw = this.storage.getItem(STORAGE_KEY);
@@ -27,8 +28,14 @@ export class ProgressRepository {
     catch { this.warning = '履歴を保存できません。この画面では学習を続けられますが、再読み込みすると今回の記録が失われる可能性があります。'; }
   }
   resetProgress() {
-    try { (this.storage || globalThis.localStorage).removeItem(STORAGE_KEY); this.warning = ''; }
-    catch { this.warning = '保存済み履歴を削除できませんでした。ブラウザーの保存設定を確認してください。'; }
-    this.attempts = [];
+    try {
+      const storage = this.storage || this.storageProvider();
+      storage.removeItem(STORAGE_KEY);
+      this.storage = storage; this.warning = ''; this.attempts = [];
+      return true;
+    } catch {
+      this.warning = '保存済み履歴を削除できませんでした。履歴は保持しています。ブラウザーの保存設定を確認し、もう一度お試しください。';
+      return false;
+    }
   }
 }

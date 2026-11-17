@@ -17,7 +17,7 @@ function render(html) {
 function reviewPool() { const latest = latestAttempts(repo.getAttempts()); return questions.filter(q => latest.get(questionKey(q))?.isCorrect === false); }
 function home() {
   const attempts = repo.getAttempts(), latest = latestAttempts(attempts), waiting = reviewPool().length;
-  render(`<section class="intro"><p class="eyebrow">READING SKILL LAB</p><h1>「読めた」を、<br class="mobile-break">確かな力に。</h1><p class="muted">一問ずつ、じっくり。7つの分野から読解の練習を始めましょう。</p></section>
+  render(`${checks.warning ? `<p class="notice" role="alert">${e(checks.warning)}</p>` : ''}<section class="intro"><p class="eyebrow">READING SKILL LAB</p><h1>「読めた」を、<br class="mobile-break">確かな力に。</h1><p class="muted">一問ずつ、じっくり。7つの分野から読解の練習を始めましょう。</p></section>
   <section class="stats" aria-label="学習実績"><div><span>累計解答回数</span><strong>${attempts.length}<small> 回</small></strong></div><div><span>累計正答率</span><strong>${pct(attempts.filter(a => a.isCorrect).length,attempts.length)}</strong></div><div><span>復習待ち</span><strong>${waiting}<small> 問</small></strong></div></section>
   <button class="mode report-link" id="check"><span><b>読解力チェック</b><small>7分野 × 3問で、次に学ぶ分野を見つける</small></span><span aria-hidden="true">→</span></button>
   <button class="mode report-link" id="report"><span><b>学習レポート</b><small>初回と最新の正答率から、次に学ぶ分野を見つける</small></span><span aria-hidden="true">→</span></button>
@@ -25,12 +25,12 @@ function home() {
   <section><div class="section-heading"><h2>分野別トレーニング</h2><span class="muted">7分野 · ${questions.length}問</span></div><div class="categories">${bank.categories.map((c,i) => {
     const pool = questions.filter(q => q.category === c.id);
     return `<button class="category" data-category="${e(c.id)}"><span class="category-number">0${i+1}</span><h3>${e(c.name)}</h3><p>${descriptions[i] || '文章を正確に読み取る練習'}</p><div><span>${pool.length}問 <span class="dot">·</span> 未挑戦 ${pool.filter(q => !latest.has(questionKey(q))).length}問</span><span aria-hidden="true">→</span></div></button>`;
-  }).join('')}</div></section><aside class="info"><b>自分のペースで続けよう</b><p>履歴はこの端末・ブラウザーだけに保存され、他の端末には同期されません。ブラウザーデータの消去やシークレットモードでは履歴が残らない場合があります。</p><p>掲載問題は試作です。授業での利用前に先生による内容確認をお願いします。</p><button class="text-button" id="reset">学習履歴をリセット</button></aside>`);
+  }).join('')}</div></section><aside class="info"><b>自分のペースで続けよう</b><p>履歴はこの端末・ブラウザーだけに保存され、他の端末には同期されません。ブラウザーデータの消去やシークレットモードでは履歴が残らない場合があります。</p><p>掲載問題は試作です。授業での利用前に先生による内容確認をお願いします。</p><button class="text-button" id="reset">学習データをすべて削除</button></aside>`);
   app.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => showSetup(b.dataset.mode));
   app.querySelectorAll('[data-category]').forEach(b => b.onclick = () => showSetup('category',b.dataset.category));
   document.querySelector('#check').onclick = showCheckSetup;
   document.querySelector('#report').onclick = showReport;
-  document.querySelector('#reset').onclick = () => { if (confirm('このブラウザーの学習履歴をすべて削除します。よろしいですか？')) { repo.resetProgress(); home(); } };
+  document.querySelector('#reset').onclick = () => { if (confirm('このブラウザーの通常演習・読解力チェックの解答履歴と、診断テストの保存結果をすべて削除します。この操作は取り消せません。削除しますか？')) { repo.resetProgress(); checks.resetResults(); session = null; setup = null; home(); } };
 }
 const checkDisclaimer = '独自の練習問題による参考チェックです。公式RSTのスコアや能力判定ではありません。';
 function showCheckSetup() {

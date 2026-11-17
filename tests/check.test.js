@@ -59,3 +59,37 @@ test('保存禁止・壊れた保存結果でも一時利用可能',()=>{
     const repo=new CheckRepository(provider);repo.save(result);assert.ok(repo.warning);assert.equal(repo.getResults().length,1);
   }
 });
+
+test('両方の保存キーとメモリーを削除し、再読込でも空・削除後の学習も保存できる',()=>{
+  const map=new Map([['other-app','keep']]),store={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)};
+  const history=new ProgressRepository(()=>store),checks=new CheckRepository(()=>store);
+  const q=bank.questions[0],attempt={questionKey:questionKey(q),category:q.category,selected:q.answer,isCorrect:true,answeredAt:new Date().toISOString(),sessionId:'before-reset'};
+  history.recordAttempt(attempt);checks.save(finish(createCheckPlan(bank.questions,bank.categories,[])));
+  assert.equal(history.resetProgress(),true);assert.equal(checks.resetResults(),true);
+  assert.deepEqual(history.getAttempts(),[]);assert.deepEqual(checks.getResults(),[]);
+  assert.deepEqual(new ProgressRepository(()=>store).getAttempts(),[]);assert.deepEqual(new CheckRepository(()=>store).getResults(),[]);
+  assert.equal(map.get('other-app'),'keep');assert.equal(map.has(STORAGE_KEY),false);assert.equal(map.has(CHECK_KEY),false);
+  history.recordAttempt({...attempt,sessionId:'after-reset'});checks.save(finish(createCheckPlan(bank.questions,bank.categories,[]),'after-reset'));
+  assert.equal(new ProgressRepository(()=>store).getAttempts().length,1);assert.equal(new CheckRepository(()=>store).getResults().length,1);
+});
+test('削除失敗はデータを保持し警告、再実行で削除できる',()=>{
+  const map=new Map(),store={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,v),removeItem:()=>{throw Error('blocked')}};
+  const history=new ProgressRepository(()=>store),checks=new CheckRepository(()=>store),q=bank.questions[0];
+  history.recordAttempt({questionKey:questionKey(q),category:q.category,selected:q.answer,isCorrect:true,answeredAt:new Date().toISOString(),sessionId:'s'});
+  checks.save(finish(createCheckPlan(bank.questions,bank.categories,[])));
+  const before=new Map(map);
+  assert.equal(history.resetProgress(),false);assert.equal(checks.resetResults(),false);
+  assert.deepEqual(map,before);assert.equal(history.getAttempts().length,1);assert.equal(checks.getResults().length,1);
+  assert.ok(history.warning);assert.ok(checks.warning);
+  store.removeItem=k=>map.delete(k);history.resetProgress();checks.resetResults();assert.equal(map.size,0);
+});
+test('破損した保存データも明示的な削除後は新しい学習を保存できる',()=>{
+  const map=new Map([[STORAGE_KEY,'{broken'],[CHECK_KEY,'{broken']]);
+  const store={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,v),removeItem:k=>map.delete(k)};
+  const history=new ProgressRepository(()=>store),checks=new CheckRepository(()=>store);
+  assert.ok(history.warning);assert.ok(checks.warning);
+  history.resetProgress();checks.resetResults();assert.equal(map.size,0);assert.equal(history.warning,'');assert.equal(checks.warning,'');
+  const q=bank.questions[0];history.recordAttempt({questionKey:questionKey(q),category:q.category,selected:q.answer,isCorrect:true,answeredAt:new Date().toISOString(),sessionId:'s'});
+  checks.save(finish(createCheckPlan(bank.questions,bank.categories,[])));
+  assert.equal(new ProgressRepository(()=>store).getAttempts().length,1);assert.equal(new CheckRepository(()=>store).getResults().length,1);
+});

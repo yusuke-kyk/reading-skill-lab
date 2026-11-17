@@ -39,6 +39,7 @@ export function completeCheck(session, categories) {
 export class CheckRepository {
   constructor(provider = () => globalThis.localStorage) {
     this.results = []; this.warning = ''; this.storage = null;
+    this.storageProvider = provider;
     try {
       this.storage = provider();
       const raw = this.storage.getItem(CHECK_KEY);
@@ -48,6 +49,17 @@ export class CheckRepository {
         parsed.forEach(validateCheck); this.results = parsed;
       }
     } catch { this.storage = null; this.warning = '保存されたチェック結果を読み込めません。一時的にチェックを利用できます。'; }
+  }
+  resetResults() {
+    try {
+      const storage = this.storage || this.storageProvider();
+      storage.removeItem(CHECK_KEY);
+      this.storage = storage; this.warning = ''; this.results = [];
+      return true;
+    } catch {
+      this.warning = '保存済みチェック結果を削除できませんでした。結果は保持しています。ブラウザーの保存設定を確認し、もう一度お試しください。';
+      return false;
+    }
   }
   getResults() { return structuredClone(this.results); }
   save(result) {
