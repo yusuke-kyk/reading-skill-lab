@@ -18,8 +18,8 @@ try:
             assert response.status == 200
             body = response.read()
             if path.endswith('.json'):
-                assert len(json.loads(body)['questions']) == 14
-    print('サブパス配下のHTML・CSS・JavaScript・14問JSON: すべて取得成功')
+                assert len(json.loads(body)['questions']) == 70
+    print('サブパス配下のHTML・CSS・JavaScript・70問JSON: すべて取得成功')
 finally:
     server.shutdown()
     server.server_close()
