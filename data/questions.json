@@ -1,0 +1,582 @@
+{
+  "schemaVersion": 1,
+  "title": "読解力ラボ 試作問題バンク",
+  "disclaimer": "公式RST問題や著書の問題を転載したものではありません。授業担当者が内容を確認してから使用してください。",
+  "categories": [
+    {
+      "id": "DEP",
+      "name": "係り受け解析"
+    },
+    {
+      "id": "ANA",
+      "name": "照応解決"
+    },
+    {
+      "id": "PARA",
+      "name": "同義文判定"
+    },
+    {
+      "id": "INF",
+      "name": "推論"
+    },
+    {
+      "id": "REP",
+      "name": "イメージ同定"
+    },
+    {
+      "id": "INSTd",
+      "name": "具体例同定（辞書）"
+    },
+    {
+      "id": "INSTm",
+      "name": "具体例同定（理数）"
+    }
+  ],
+  "questions": [
+    {
+      "id": "DEP-001",
+      "category": "DEP",
+      "difficulty": "basic",
+      "format": "single_choice",
+      "passage": "講演会で山本さんが紹介した本を、鈴木さんが図書室で借りた。",
+      "question": "本を図書室で借りたのは誰か。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "山本さん"
+        },
+        {
+          "id": "B",
+          "text": "鈴木さん"
+        },
+        {
+          "id": "C",
+          "text": "山本さんと鈴木さん"
+        },
+        {
+          "id": "D",
+          "text": "本文だけでは判断できない"
+        }
+      ],
+      "answer": "B",
+      "explanation": "「山本さんが」は「紹介した」に、「鈴木さんが」は「借りた」に係る。",
+      "trap": "「紹介した人」と「借りた人」を入れ替えない。",
+      "tags": [
+        "係り受け",
+        "主語述語"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "DEP-002",
+      "category": "DEP",
+      "difficulty": "standard",
+      "format": "single_choice",
+      "passage": "赤い帽子をかぶった生徒の隣にいる先生が、校庭で写真を撮った。",
+      "question": "赤い帽子をかぶっていたとわかるのは誰か。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "先生"
+        },
+        {
+          "id": "B",
+          "text": "先生と生徒の両方"
+        },
+        {
+          "id": "C",
+          "text": "誰もわからない"
+        },
+        {
+          "id": "D",
+          "text": "生徒"
+        }
+      ],
+      "answer": "D",
+      "explanation": "「赤い帽子をかぶった」は直後の「生徒」を修飾している。",
+      "trap": "先生の動作と生徒の服装を区別する。",
+      "tags": [
+        "修飾関係"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "ANA-001",
+      "category": "ANA",
+      "difficulty": "basic",
+      "format": "single_choice",
+      "passage": "図書室では新刊案内を配った。これには貸出開始日と本の紹介が掲載されている。",
+      "question": "「これ」が指すものはどれか。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "図書室"
+        },
+        {
+          "id": "B",
+          "text": "貸出開始日"
+        },
+        {
+          "id": "C",
+          "text": "新刊案内"
+        },
+        {
+          "id": "D",
+          "text": "本の紹介"
+        }
+      ],
+      "answer": "C",
+      "explanation": "「これ」は直前に登場した「新刊案内」を指す。",
+      "trap": "「これには」掲載される側の媒体を探す。",
+      "tags": [
+        "指示語"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "ANA-002",
+      "category": "ANA",
+      "difficulty": "standard",
+      "format": "single_choice",
+      "passage": "佐藤さんは文化祭のポスターを先生に提出した。先生はそれを印刷し、校内に掲示した。",
+      "question": "「それ」が指すものはどれか。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "ポスター"
+        },
+        {
+          "id": "B",
+          "text": "佐藤さん"
+        },
+        {
+          "id": "C",
+          "text": "文化祭"
+        },
+        {
+          "id": "D",
+          "text": "校内"
+        }
+      ],
+      "answer": "A",
+      "explanation": "印刷して掲示できるものは、佐藤さんが提出した「ポスター」である。",
+      "trap": "直前の人物ではなく、文脈上の対象物を確認する。",
+      "tags": [
+        "指示語",
+        "目的語"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "PARA-001",
+      "category": "PARA",
+      "difficulty": "basic",
+      "format": "single_choice",
+      "passage": "文化祭の実行委員になった生徒は、全員研修に参加した。",
+      "question": "本文と同じ意味になる文はどれか。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "研修参加者は全員実行委員である。"
+        },
+        {
+          "id": "B",
+          "text": "実行委員なのに研修に参加しなかった生徒はいない。"
+        },
+        {
+          "id": "C",
+          "text": "実行委員以外は研修に参加していない。"
+        },
+        {
+          "id": "D",
+          "text": "研修に参加した生徒だけが実行委員になれる。"
+        }
+      ],
+      "answer": "B",
+      "explanation": "すべての実行委員が研修に参加したことを、否定形で言い換えている。",
+      "trap": "「実行委員なら参加」と「参加者なら実行委員」は逆の関係。",
+      "tags": [
+        "全称",
+        "同義文"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "PARA-002",
+      "category": "PARA",
+      "difficulty": "standard",
+      "format": "single_choice",
+      "passage": "発表会では、各班から少なくとも一人が発表した。",
+      "question": "本文と同じ意味になる文はどれか。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "どの班も全員が発表した。"
+        },
+        {
+          "id": "B",
+          "text": "発表した生徒は一班につき一人だけだった。"
+        },
+        {
+          "id": "C",
+          "text": "一人も発表しなかった班があった。"
+        },
+        {
+          "id": "D",
+          "text": "発表しなかった班は一つもない。"
+        }
+      ],
+      "answer": "D",
+      "explanation": "各班に一人以上の発表者がいたので、発表者がゼロの班はない。",
+      "trap": "「少なくとも一人」と「一人だけ」は異なる。",
+      "tags": [
+        "少なくとも",
+        "数量表現"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "INF-001",
+      "category": "INF",
+      "difficulty": "basic",
+      "format": "single_choice",
+      "passage": "A班はB班より早く到着した。C班はA班より遅く到着した。",
+      "question": "この3班のうち、必ず最初に到着した班はどれか。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "A班"
+        },
+        {
+          "id": "B",
+          "text": "B班"
+        },
+        {
+          "id": "C",
+          "text": "C班"
+        },
+        {
+          "id": "D",
+          "text": "決められない"
+        }
+      ],
+      "answer": "A",
+      "explanation": "A班はB班より早く、かつC班より早い。したがって最初はA班。",
+      "trap": "B班とC班の前後関係が不明でも最初は決まる。",
+      "tags": [
+        "順序関係"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "INF-002",
+      "category": "INF",
+      "difficulty": "standard",
+      "format": "single_choice",
+      "passage": "参加者30人は第一希望と第二希望のどちらか一方だけを必ず選んだ。第一希望を選んだのは18人だった。",
+      "question": "第二希望を選んだ人数は何人か。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "8人"
+        },
+        {
+          "id": "B",
+          "text": "18人"
+        },
+        {
+          "id": "C",
+          "text": "12人"
+        },
+        {
+          "id": "D",
+          "text": "48人"
+        }
+      ],
+      "answer": "C",
+      "explanation": "参加者全員が二択のどちらか一方を選んだため、30−18＝12人。",
+      "trap": "重複選択や未選択がないことが本文に明示されている。",
+      "tags": [
+        "条件整理",
+        "集合"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "REP-001",
+      "category": "REP",
+      "difficulty": "basic",
+      "format": "single_choice",
+      "passage": "",
+      "question": "次の表を読み、正しい説明を一つ選べ。",
+      "visual": {
+        "type": "table",
+        "caption": "図書室の曜日別利用者数",
+        "headers": [
+          "曜日",
+          "利用者数（人）"
+        ],
+        "rows": [
+          [
+            "月",
+            "28"
+          ],
+          [
+            "火",
+            "32"
+          ],
+          [
+            "水",
+            "31"
+          ],
+          [
+            "木",
+            "27"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "A",
+          "text": "最も利用者が多いのは水曜日である。"
+        },
+        {
+          "id": "B",
+          "text": "木曜日は月曜日より1人多い。"
+        },
+        {
+          "id": "C",
+          "text": "火曜日から水曜日に2人減った。"
+        },
+        {
+          "id": "D",
+          "text": "火曜日は月曜日より4人多い。"
+        }
+      ],
+      "answer": "D",
+      "explanation": "火曜日32人、月曜日28人なので差は4人。",
+      "trap": "最大・比較対象・増減の数値を逐一確認する。",
+      "tags": [
+        "表の読み取り"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "REP-002",
+      "category": "REP",
+      "difficulty": "standard",
+      "format": "single_choice",
+      "passage": "",
+      "question": "次の表を読み、必ず正しい説明を一つ選べ。",
+      "visual": {
+        "type": "table",
+        "caption": "図書室の学年別・時間帯別利用者数",
+        "headers": [
+          "時間帯",
+          "1年生",
+          "2年生"
+        ],
+        "rows": [
+          [
+            "午前",
+            "12",
+            "8"
+          ],
+          [
+            "午後",
+            "7",
+            "13"
+          ]
+        ]
+      },
+      "options": [
+        {
+          "id": "A",
+          "text": "1年生の利用者数の合計は19人である。"
+        },
+        {
+          "id": "B",
+          "text": "2年生の利用者数の合計は19人である。"
+        },
+        {
+          "id": "C",
+          "text": "午前の利用者数の合計は18人である。"
+        },
+        {
+          "id": "D",
+          "text": "午後の利用者数は午前より2人多い。"
+        }
+      ],
+      "answer": "A",
+      "explanation": "1年生は午前12人と午後7人で合計19人。2年生は21人、午前も午後も合計20人。",
+      "trap": "表の行・列を取り違えずに合計する。",
+      "tags": [
+        "複数条件",
+        "表の読み取り"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "INSTd-001",
+      "category": "INSTd",
+      "difficulty": "basic",
+      "format": "single_choice",
+      "passage": "「互恵」とは、関係する双方が互いに利益を得ることをいう。",
+      "question": "この定義に最もよく当てはまる例はどれか。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "AさんがBさんに本を貸した。"
+        },
+        {
+          "id": "B",
+          "text": "AさんがBさんから借りた物を返した。"
+        },
+        {
+          "id": "C",
+          "text": "AさんがBさんの作業を手伝い、BさんがAさんに勉強を教えた。"
+        },
+        {
+          "id": "D",
+          "text": "AさんとBさんが同じ店で別々に買い物した。"
+        }
+      ],
+      "answer": "C",
+      "explanation": "双方が相手に利益をもたらす行動が明示されている。",
+      "trap": "片方への利益だけでは「双方が互いに」を満たさない。",
+      "tags": [
+        "定義理解",
+        "具体例"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "INSTd-002",
+      "category": "INSTd",
+      "difficulty": "standard",
+      "format": "single_choice",
+      "passage": "「代替」とは、あるものの代わりに別のものを用いることをいう。",
+      "question": "この定義に最もよく当てはまる例はどれか。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "校庭が使えないので、集会を来週に延期した。"
+        },
+        {
+          "id": "B",
+          "text": "校庭が使えないので、体育館を使って集会を実施した。"
+        },
+        {
+          "id": "C",
+          "text": "校庭での集会の参加人数を半分に減らした。"
+        },
+        {
+          "id": "D",
+          "text": "校庭で集会を開き、続けて運動会も実施した。"
+        }
+      ],
+      "answer": "B",
+      "explanation": "校庭の代わりに体育館という別の場所を使用している。",
+      "trap": "予定変更や規模縮小は必ずしも「別のものを用いる」ことではない。",
+      "tags": [
+        "定義理解",
+        "具体例"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "INSTm-001",
+      "category": "INSTm",
+      "difficulty": "basic",
+      "format": "single_choice",
+      "passage": "「欠席率」を「欠席者数÷在籍者数×100（％）」と定義する。A組は20人中2人、B組は60人中3人が欠席した。",
+      "question": "欠席率が高いのはどちらか。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "A組"
+        },
+        {
+          "id": "B",
+          "text": "B組"
+        },
+        {
+          "id": "C",
+          "text": "同じ"
+        },
+        {
+          "id": "D",
+          "text": "この情報だけでは判断できない"
+        }
+      ],
+      "answer": "A",
+      "explanation": "A組は2÷20×100＝10％、B組は3÷60×100＝5％。",
+      "trap": "実際の欠席者数ではなく、定義にある割合を比較する。",
+      "tags": [
+        "割合",
+        "定義理解"
+      ],
+      "version": 1,
+      "status": "pilot"
+    },
+    {
+      "id": "INSTm-002",
+      "category": "INSTm",
+      "difficulty": "standard",
+      "format": "single_choice",
+      "passage": "「密度」を「物体の質量÷体積」と定義する。物体Xは質量120g・体積40cm³、物体Yは質量150g・体積75cm³である。",
+      "question": "密度が大きい物体はどれか。",
+      "visual": null,
+      "options": [
+        {
+          "id": "A",
+          "text": "物体Y"
+        },
+        {
+          "id": "B",
+          "text": "物体X"
+        },
+        {
+          "id": "C",
+          "text": "同じ"
+        },
+        {
+          "id": "D",
+          "text": "この情報だけでは判断できない"
+        }
+      ],
+      "answer": "B",
+      "explanation": "Xは120÷40＝3g/cm³、Yは150÷75＝2g/cm³。",
+      "trap": "質量だけでなく体積との比を計算する。",
+      "tags": [
+        "理科",
+        "定義理解"
+      ],
+      "version": 1,
+      "status": "pilot"
+    }
+  ]
+}
