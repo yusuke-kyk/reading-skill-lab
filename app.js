@@ -1,0 +1,88 @@
+import {ProgressRepository} from './progress.js';
+import {questionKey, latestAttempts, selectQuestions, validateBank} from './quiz.js';
+const app = document.querySelector('#app');
+const repo = new ProgressRepository();
+let bank, questions, session, setup;
+const e = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pct = (correct,total) => total ? Math.round(correct / total * 100) + '%' : '—';
+const categoryName = id => bank.categories.find(c => c.id === id)?.name || id;
+const descriptions = ['主語と述語のつながりを読む','指示語が指すものを見つける','言い換えた文の意味を比べる','条件から確かなことを導く','文章と表の情報を照らし合わせる','言葉の定義を具体例に結びつける','理数の定義を使って判断する'];
+function render(html) {
+  app.innerHTML = `${repo.warning ? `<p class="notice" role="alert">${e(repo.warning)}</p>` : ''}${html}`;
+  app.focus(); window.scrollTo(0,0);
+}
+function reviewPool() { const latest = latestAttempts(repo.getAttempts()); return questions.filter(q => latest.get(questionKey(q))?.isCorrect === false); }
+function home() {
+  const attempts = repo.getAttempts(), latest = latestAttempts(attempts), waiting = reviewPool().length;
+  render(`<section class="intro"><p class="eyebrow">READING SKILL LAB</p><h1>「読めた」を、<br class="mobile-break">確かな力に。</h1><p class="muted">一問ずつ、じっくり。7つの分野から読解の練習を始めましょう。</p></section>
+  <section class="stats" aria-label="学習実績"><div><span>累計解答回数</span><strong>${attempts.length}<small> 回</small></strong></div><div><span>累計正答率</span><strong>${pct(attempts.filter(a => a.isCorrect).length,attempts.length)}</strong></div><div><span>復習待ち</span><strong>${waiting}<small> 問</small></strong></div></section>
+  <nav class="modes" aria-label="トレーニングモード"><button class="mode" data-mode="random"><span class="mode-icon" aria-hidden="true">⇄</span><span><b>ランダム</b><small>7分野をまぜてトレーニング</small></span><span aria-hidden="true">→</span></button><button class="mode" data-mode="review"><span class="mode-icon" aria-hidden="true">↻</span><span><b>間違い直し</b><small>${waiting ? `${waiting}問をもう一度、理解へ` : '復習待ちはありません'}</small></span><span aria-hidden="true">→</span></button></nav>
+  <section><div class="section-heading"><h2>分野別トレーニング</h2><span class="muted">7分野 · ${questions.length}問</span></div><div class="categories">${bank.categories.map((c,i) => {
+    const pool = questions.filter(q => q.category === c.id);
+    return `<button class="category" data-category="${e(c.id)}"><span class="category-number">0${i+1}</span><h3>${e(c.name)}</h3><p>${descriptions[i] || '文章を正確に読み取る練習'}</p><div><span>${pool.length}問 <span class="dot">·</span> 未挑戦 ${pool.filter(q => !latest.has(questionKey(q))).length}問</span><span aria-hidden="true">→</span></div></button>`;
+  }).join('')}</div></section><aside class="info"><b>自分のペースで続けよう</b><p>履歴はこの端末・ブラウザーだけに保存され、他の端末には同期されません。ブラウザーデータの消去やシークレットモードでは履歴が残らない場合があります。</p><p>掲載問題は試作です。授業での利用前に先生による内容確認をお願いします。</p><button class="text-button" id="reset">学習履歴をリセット</button></aside>`);
+  app.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => showSetup(b.dataset.mode));
+  app.querySelectorAll('[data-category]').forEach(b => b.onclick = () => showSetup('category',b.dataset.category));
+  document.querySelector('#reset').onclick = () => { if (confirm('このブラウザーの学習履歴をすべて削除します。よろしいですか？')) { repo.resetProgress(); home(); } };
+}
+function showSetup(mode, category) {
+  setup = {mode,category};
+  const pool = mode === 'review' ? reviewPool() : questions.filter(q => mode !== 'category' || q.category === category);
+  setup.pool = pool;
+  const title = mode === 'category' ? categoryName(category) : mode === 'review' ? '間違い直し' : 'ランダムトレーニング';
+  const latest = latestAttempts(repo.getAttempts());
+  render(`<button class="text-button" id="home">← ホームに戻る</button><section class="panel setup"><p class="eyebrow">トレーニングの準備</p><h1>${e(title)}</h1>${pool.length ? `<p class="muted">対象は${pool.length}問です。少ない場合は、出題数を自動調整します。</p>${pool.every(q => latest.has(questionKey(q))) ? '<p class="notice">すべて挑戦済みです。学習済みの問題をもう一度出題します。</p>' : ''}<form id="setup-form"><fieldset><legend>問題数</legend><div class="count-options">${[['5','5問'],['10','10問'],['all','全問']].map(([v,t],i) => `<label><input type="radio" name="count" value="${v}" ${i===0?'checked':''}> ${t}</label>`).join('')}</div></fieldset><label class="check"><input type="checkbox" name="prioritize" checked> 未挑戦問題を優先</label><button class="primary" type="submit">開始する →</button></form>` : '<p class="empty">復習待ちはありません。<br>分野別やランダムで練習を続けましょう。</p>'}</section>`);
+  document.querySelector('#home').onclick = home;
+  const form = document.querySelector('#setup-form');
+  if (form) form.onsubmit = event => {
+    event.preventDefault();
+    session = {id: crypto.randomUUID(), questions: selectQuestions(pool,repo.getAttempts(),form.elements.count.value,form.elements.prioritize.checked), index:0, answers:[], locked:false};
+    showQuestion();
+  };
+}
+function visual(q) {
+  if (!q.visual) return '';
+  const v = q.visual;
+  return `<div class="table-wrap"><table><caption>${e(v.caption)}</caption><thead><tr>${v.headers.map(h => `<th scope="col">${e(h)}</th>`).join('')}</tr></thead><tbody>${v.rows.map(r => `<tr>${r.map((c,i) => i === 0 ? `<th scope="row">${e(c)}</th>` : `<td>${e(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function explanation(q, selected) { return `<p><b>正解：${e(q.answer)}．${e(q.options.find(o => o.id === q.answer).text)}</b></p><p>${e(q.explanation)}</p><div class="trap"><b>着眼点</b><p>${e(q.trap)}</p></div>${selected ? `<p class="muted">あなたの解答：${e(selected)}</p>` : ''}`; }
+function showQuestion() {
+  const q = session.questions[session.index]; session.locked = false;
+  render(`<div class="question-top"><button class="text-button" id="quit">ホームに戻る</button><span>${session.index+1} / ${session.questions.length} 問</span></div><progress value="${session.index+1}" max="${session.questions.length}" aria-label="出題の進捗"></progress><section class="panel question"><div class="badges"><span>${e(categoryName(q.category))}</span><span>${{basic:'基礎',standard:'標準',advanced:'発展'}[q.difficulty]}</span>${q.status==='pilot'?'<span class="pilot">試作問題</span>':''}</div><h1 class="question-title">${e(q.question)}</h1>${q.passage ? `<div class="passage">${e(q.passage)}</div>` : ''}${visual(q)}<form id="answer-form"><fieldset><legend class="muted">答えを一つ選んでください</legend><div class="options">${q.options.map(o => `<label class="option"><input type="radio" name="answer" value="${o.id}" required><span class="option-letter">${o.id}</span><span>${e(o.text)}</span></label>`).join('')}</div></fieldset><button class="primary" id="submit" disabled>解答する</button></form><div id="feedback" role="status" aria-live="polite"></div></section>`);
+  document.querySelector('#quit').onclick = () => { if(confirm('今回のトレーニングを終了してホームに戻りますか？ 確定済みの解答は記録されています。')) home(); };
+  const form = document.querySelector('#answer-form'), submit = document.querySelector('#submit');
+  form.onchange = () => { if (!session.locked) submit.disabled = false; };
+  form.onsubmit = event => {
+    event.preventDefault(); if (session.locked || !form.elements.answer.value) return;
+    session.locked = true;
+    const selected = form.elements.answer.value, isCorrect = selected === q.answer;
+    repo.recordAttempt({questionKey:questionKey(q), category:q.category, selected, isCorrect, answeredAt:new Date().toISOString(), sessionId:session.id});
+    session.answers.push({q,selected,isCorrect});
+    form.querySelectorAll('input,button').forEach(el => el.disabled = true);
+    form.querySelectorAll('.option').forEach(label => { if (label.querySelector('input').value === q.answer) label.classList.add('correct'); });
+    const feedback = document.querySelector('#feedback');
+    feedback.innerHTML = `<div class="feedback ${isCorrect?'success':'failure'}" tabindex="-1"><h2>${isCorrect?'○ 正解':'× 不正解'}</h2>${explanation(q)}${repo.warning ? `<p class="notice">${e(repo.warning)}</p>` : ''}</div><button class="primary" id="next">${session.index+1 === session.questions.length?'結果を見る':'次の問題へ'} →</button>`;
+    feedback.querySelector('.feedback').focus();
+    document.querySelector('#next').onclick = () => { if (++session.index < session.questions.length) showQuestion(); else showResult(); };
+  };
+}
+function showResult() {
+  const correct = session.answers.filter(a => a.isCorrect).length, wrong = session.answers.filter(a => !a.isCorrect);
+  render(`<section class="panel result"><p class="eyebrow">トレーニング完了</p><h1>おつかれさまでした。</h1><p class="score">${correct}<small> / ${session.questions.length} 問正解</small></p><p>今回の正答率 <b>${pct(correct,session.questions.length)}</b></p><p class="muted">${wrong.length ? '解説を読み返して、理解を一歩深めましょう。' : 'すべて正解です。この調子で続けましょう。'}</p><button class="primary" id="again">${setup.mode==='category'?'同じ分野をもう一度':'同じモードをもう一度'}</button><button class="secondary" id="home">ホームに戻る</button></section><section class="result-review"><h2>今回の間違いを振り返る <small>${wrong.length}問</small></h2>${wrong.map(a => `<details><summary>${e(a.q.question)}<span>解説を見る</span></summary>${a.q.passage?`<p>${e(a.q.passage)}</p>`:''}${visual(a.q)}${explanation(a.q,a.selected)}</details>`).join('') || '<p class="muted">今回の誤答はありません。</p>'}</section>`);
+  document.querySelector('#home').onclick = home;
+  document.querySelector('#again').onclick = () => showSetup(setup.mode,setup.category);
+}
+async function load() {
+  try {
+    const response = await fetch('./data/questions.json');
+    if (!response.ok) throw new Error('通信に失敗しました。');
+    bank = validateBank(await response.json()); questions = bank.questions.filter(q => q.status !== 'draft');
+    if (!questions.length) throw new Error('出題できる問題がありません。');
+    document.querySelector('.edition').textContent = `試作版 / ${questions.length}問`;
+    home();
+  } catch (error) {
+    render(`<section class="panel"><h1>問題を読み込めませんでした</h1><p>通信環境や問題データを確認して、もう一度お試しください。</p><p class="muted">${e(error.message)}</p><button class="primary" id="retry">再読み込み</button></section>`);
+    document.querySelector('#retry').onclick = load;
+  }
+}
+load();

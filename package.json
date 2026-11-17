@@ -1,0 +1,9 @@
+{
+  "name": "reading-skill-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "python3 scripts/serve.py",
+    "test": "node --test tests/*.test.js"
+  }
+}
