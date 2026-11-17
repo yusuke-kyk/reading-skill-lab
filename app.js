@@ -1,3 +1,4 @@
+import {analyzeLearning, formatRate} from './analytics.js';
 import {ProgressRepository} from './progress.js';
 import {questionKey, latestAttempts, selectQuestions, validateBank} from './quiz.js';
 const app = document.querySelector('#app');
@@ -16,6 +17,7 @@ function home() {
   const attempts = repo.getAttempts(), latest = latestAttempts(attempts), waiting = reviewPool().length;
   render(`<section class="intro"><p class="eyebrow">READING SKILL LAB</p><h1>「読めた」を、<br class="mobile-break">確かな力に。</h1><p class="muted">一問ずつ、じっくり。7つの分野から読解の練習を始めましょう。</p></section>
   <section class="stats" aria-label="学習実績"><div><span>累計解答回数</span><strong>${attempts.length}<small> 回</small></strong></div><div><span>累計正答率</span><strong>${pct(attempts.filter(a => a.isCorrect).length,attempts.length)}</strong></div><div><span>復習待ち</span><strong>${waiting}<small> 問</small></strong></div></section>
+  <button class="mode report-link" id="report"><span><b>学習レポート</b><small>初回と最新の正答率から、次に学ぶ分野を見つける</small></span><span aria-hidden="true">→</span></button>
   <nav class="modes" aria-label="トレーニングモード"><button class="mode" data-mode="random"><span class="mode-icon" aria-hidden="true">⇄</span><span><b>ランダム</b><small>7分野をまぜてトレーニング</small></span><span aria-hidden="true">→</span></button><button class="mode" data-mode="review"><span class="mode-icon" aria-hidden="true">↻</span><span><b>間違い直し</b><small>${waiting ? `${waiting}問をもう一度、理解へ` : '復習待ちはありません'}</small></span><span aria-hidden="true">→</span></button></nav>
   <section><div class="section-heading"><h2>分野別トレーニング</h2><span class="muted">7分野 · ${questions.length}問</span></div><div class="categories">${bank.categories.map((c,i) => {
     const pool = questions.filter(q => q.category === c.id);
@@ -23,7 +25,21 @@ function home() {
   }).join('')}</div></section><aside class="info"><b>自分のペースで続けよう</b><p>履歴はこの端末・ブラウザーだけに保存され、他の端末には同期されません。ブラウザーデータの消去やシークレットモードでは履歴が残らない場合があります。</p><p>掲載問題は試作です。授業での利用前に先生による内容確認をお願いします。</p><button class="text-button" id="reset">学習履歴をリセット</button></aside>`);
   app.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => showSetup(b.dataset.mode));
   app.querySelectorAll('[data-category]').forEach(b => b.onclick = () => showSetup('category',b.dataset.category));
+  document.querySelector('#report').onclick = showReport;
   document.querySelector('#reset').onclick = () => { if (confirm('このブラウザーの学習履歴をすべて削除します。よろしいですか？')) { repo.resetProgress(); home(); } };
+}
+function reportStats(stats) {
+  return `<dl class="report-stats"><div><dt>初回正答率</dt><dd>${formatRate(stats.firstCorrect,stats.answered)}</dd></div><div><dt>最新正答率</dt><dd>${formatRate(stats.latestCorrect,stats.answered)}</dd></div><div><dt>学習済み問題数</dt><dd>${stats.answered}<small> / ${stats.total}問</small></dd></div></dl>`;
+}
+function showReport() {
+  const report = analyzeLearning(bank.questions,bank.categories,repo.getAttempts());
+  render(`<button class="text-button" id="home">← ホームに戻る</button><section class="report-intro"><p class="eyebrow">学習分析 Ver.1.1</p><h1>学習レポート</h1><p class="muted">初回と今の理解を比べて、次の練習につなげましょう。</p></section>
+  <section class="panel report-overall" aria-labelledby="overall-heading"><h2 id="overall-heading">全体の学習状況</h2>${reportStats(report.overall)}<label class="progress-label" for="learning-progress">学習進捗：${report.overall.total}問中 ${report.overall.answered}問に解答済み</label><progress id="learning-progress" value="${report.overall.answered}" max="${report.overall.total}"></progress></section>
+  <aside class="info report-help"><p><b>初回正答率</b>：各問題で最初に記録された解答の正答率です。最初の理解を振り返れます。</p><p><b>最新正答率</b>：各問題で最後に記録された解答の正答率です。復習後の理解を確認できます。</p><p>解答した問題だけで算出し、未挑戦は含めません。解答がない場合は「—」です。現在の問題ID・版に一致する履歴を、記録された順に集計します。</p></aside>
+  ${report.overall.answered === 0 ? '<p class="notice">まだ現在の問題への解答記録がありません。分野を選んで練習を始めましょう。</p>' : ''}
+  <section aria-labelledby="category-report-heading"><div class="section-heading"><h2 id="category-report-heading">分野ごとの学習状況</h2></div><div class="report-categories">${report.categories.map(c => `<article class="panel report-category"><h3>${e(c.name)}</h3>${reportStats(c)}<button class="secondary" data-report-category="${e(c.id)}">この分野を練習する<span class="sr-only">：${e(c.name)}</span> →</button></article>`).join('')}</div></section>`);
+  document.querySelector('#home').onclick = home;
+  app.querySelectorAll('[data-report-category]').forEach(button => button.onclick = () => showSetup('category',button.dataset.reportCategory));
 }
 function showSetup(mode, category) {
   setup = {mode,category};
